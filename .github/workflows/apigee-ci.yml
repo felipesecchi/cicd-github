@@ -4,36 +4,44 @@ on: push
   
 env:
   API_VERSION: googleapi 
-  # or 
+  # ou:
   #API_VERSION: apigeeapi
 
-  # Default Target Apigee Organization et environment (can be also be dynamically defined in [Set Variables *] steps)
+  # Default Target Apigee Organization e Environment
   DEFAULT_APIGEE_ORG: interno-ipnet-dev
   DEFAULT_APIGEE_ENV: default-dev
   TEST_HOST: apigee.ipnetsolucoes.com.br
 
-  # Retrieve Apigee UserID and password from repository settings (secrets)
+  # Credenciais / SA
   APIGEE_CREDS_USR: ${{ secrets.APIGEE_CREDS_USR }}
   APIGEE_CREDS_PSW: ${{ secrets.APIGEE_CREDS_PSW }}
-
   GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
-  # These variables will be dynamically defined in [Set Variables *] steps
+  # Serão preenchidas nos steps de "Set Variables *"
   AUTHOR_EMAIL: ''
   APIGEE_ORG: ''
   APIGEE_ENV: ''
   APIGEE_DEPLOYMENT_SUFFIX: ''
-  
+
 
 jobs:
   Apigee-Deploy:
     if: "!contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ubuntu-latest
 
+    # >>> AQUI VOCÊ LISTA OS PROXIES (pasta dentro de proxies/)
+    strategy:
+      fail-fast: false
+      matrix:
+        proxy:
+          - airports-cicd-v1
+          # - outro-proxy
+          # - mais-um-proxy
+
     steps:
       - uses: actions/checkout@v3
 
-      # Detect if EdgeConfig changed in this push
+      # Detecta se houve alteração dentro de EdgeConfig/
       - name: Detect EdgeConfig changes
         id: edgeconfig
         run: |
@@ -44,30 +52,30 @@ jobs:
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
-      # Set Variables depending on branch
+      # Set Variables dependendo da branch
       - name: Set Variables for [Main] branch
         if: github.ref == 'refs/heads/main'
         run: |
-          echo "AUTHOR_EMAIL=$(echo $GITHUB_ACTOR)" >> $GITHUB_ENV
-          echo "APIGEE_ORG=$(echo $DEFAULT_APIGEE_ORG)" >> $GITHUB_ENV
-          echo "APIGEE_ENV=$(echo $DEFAULT_APIGEE_ENV)" >> $GITHUB_ENV
+          echo "AUTHOR_EMAIL=${GITHUB_ACTOR}" >> $GITHUB_ENV
+          echo "APIGEE_ORG=${DEFAULT_APIGEE_ORG}" >> $GITHUB_ENV
+          echo "APIGEE_ENV=${DEFAULT_APIGEE_ENV}" >> $GITHUB_ENV
 
       - name: Set Variables for [Prod] branch
         if: github.ref == 'refs/heads/prod'
         run: |
-          echo "AUTHOR_EMAIL=$(echo $GITHUB_ACTOR)" >> $GITHUB_ENV
-          echo "APIGEE_ORG=$(echo $DEFAULT_APIGEE_ORG)" >> $GITHUB_ENV
+          echo "AUTHOR_EMAIL=${GITHUB_ACTOR}" >> $GITHUB_ENV
+          echo "APIGEE_ORG=${DEFAULT_APIGEE_ORG}" >> $GITHUB_ENV
           echo "APIGEE_ENV=prod" >> $GITHUB_ENV
   
       - name: Set Variables for branch not [Main], not [Prod]
         if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/prod'
         run: |
-          echo "APIGEE_DEPLOYMENT_SUFFIX=$(echo $GITHUB_REF | sed 's/.*\///')" >> $GITHUB_ENV
-          echo "AUTHOR_EMAIL=$(echo $GITHUB_ACTOR)" >> $GITHUB_ENV
-          echo "APIGEE_ORG=$(echo $DEFAULT_APIGEE_ORG)" >> $GITHUB_ENV
-          echo "APIGEE_ENV=$(echo $DEFAULT_APIGEE_ENV)" >> $GITHUB_ENV
+          echo "APIGEE_DEPLOYMENT_SUFFIX=$(echo ${GITHUB_REF} | sed 's#.*/##')" >> $GITHUB_ENV
+          echo "AUTHOR_EMAIL=${GITHUB_ACTOR}" >> $GITHUB_ENV
+          echo "APIGEE_ORG=${DEFAULT_APIGEE_ORG}" >> $GITHUB_ENV
+          echo "APIGEE_ENV=${DEFAULT_APIGEE_ENV}" >> $GITHUB_ENV
 
-      # Setup Maven & Maven Cache
+      # Java + cache Maven
       - name: Set up JDK 1.8
         uses: actions/setup-java@v4
         with:
@@ -81,36 +89,62 @@ jobs:
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2   
 
-      # Generate SA key file from secret variable
+      # Gera arquivo da Service Account
       - name: Generate SA key file
         if: env.API_VERSION == 'googleapi'
         run: | 
-          echo $GCP_SERVICE_ACCOUNT > sa.json
+          echo "${GCP_SERVICE_ACCOUNT}" > sa.json
 
-      # Deploy Apigee Config (Apigee [Config] Maven plugin)
+      # Deploy de EdgeConfig (só se API_VERSION == googleapi E EdgeConfig tiver mudado)
       - name: mvn deploy config xhybrid
         if: env.API_VERSION == 'googleapi' && steps.edgeconfig.outputs.changed == 'true'
         working-directory: ./EdgeConfig
         run: |
-          # aqui já estamos DENTRO de EdgeConfig
-          sed -i "s/target_apigee_env/$APIGEE_ENV/g" edge.json
+          # já estamos dentro de EdgeConfig
+          sed -i "s/target_apigee_env/${APIGEE_ENV}/g" edge.json
+
           mvn install -q -Pgoogleapi \
-            -Dapigee.org=$APIGEE_ORG \
-            -Dapigee.env=$APIGEE_ENV \
+            -Dapigee.org=${APIGEE_ORG} \
+            -Dapigee.env=${APIGEE_ENV} \
             -Dapigee.config.options=update \
             -Dapigee.config.file=edge.json
 
-      # Package & Deploy Apigee proxy (Apigee [Deploy] Maven plugin)
+      # Package & Deploy Apigee proxy (para cada item de matrix.proxy)
       - name: mvn package
-        run: mvn process-resources -P$API_VERSION -Dcommit=$GITHUB_SHA -Dauthor=$AUTHOR_EMAIL -Ddeployment.suffix=$APIGEE_DEPLOYMENT_SUFFIX
+        working-directory: proxies/${{ matrix.proxy }}
+        run: |
+          mvn process-resources \
+            -P${API_VERSION} \
+            -Dcommit=${GITHUB_SHA} \
+            -Dauthor=${AUTHOR_EMAIL} \
+            -Ddeployment.suffix=${APIGEE_DEPLOYMENT_SUFFIX}
 
       - name: mvn config
-        run: mvn apigee-enterprise:configure -q -P$API_VERSION -Dorg=$APIGEE_ORG -Denv=$APIGEE_ENV -Ddeployment.suffix=$APIGEE_DEPLOYMENT_SUFFIX 
+        working-directory: proxies/${{ matrix.proxy }}
+        run: |
+          mvn apigee-enterprise:configure -q \
+            -P${API_VERSION} \
+            -Dorg=${APIGEE_ORG} \
+            -Denv=${APIGEE_ENV} \
+            -Ddeployment.suffix=${APIGEE_DEPLOYMENT_SUFFIX}
 
       - name: mvn deploy proxy edge
         if: env.API_VERSION == 'apigeeapi'
-        run: mvn apigee-enterprise:deploy -q -Papigeeapi -Dorg=$APIGEE_ORG -Denv=$APIGEE_ENV -Dpassword=$APIGEE_CREDS_PSW -Dusername=$APIGEE_CREDS_USR -Ddeployment.suffix=$APIGEE_DEPLOYMENT_SUFFIX  
+        working-directory: proxies/${{ matrix.proxy }}
+        run: |
+          mvn apigee-enterprise:deploy -q -Papigeeapi \
+            -Dorg=${APIGEE_ORG} \
+            -Denv=${APIGEE_ENV} \
+            -Dpassword=${APIGEE_CREDS_PSW} \
+            -Dusername=${APIGEE_CREDS_USR} \
+            -Ddeployment.suffix=${APIGEE_DEPLOYMENT_SUFFIX}
 
       - name: mvn deploy proxy xhybrid
         if: env.API_VERSION == 'googleapi'
-        run: mvn apigee-enterprise:deploy -q -Pgoogleapi -Denv=$APIGEE_ENV -Dsa=sa.json -Dorg=$APIGEE_ORG -Ddeployment.suffix=$APIGEE_DEPLOYMENT_SUFFIX
+        working-directory: proxies/${{ matrix.proxy }}
+        run: |
+          mvn apigee-enterprise:deploy -q -Pgoogleapi \
+            -Denv=${APIGEE_ENV} \
+            -Dsa=../../sa.json \
+            -Dorg=${APIGEE_ORG} \
+            -Ddeployment.suffix=${APIGEE_DEPLOYMENT_SUFFIX}
