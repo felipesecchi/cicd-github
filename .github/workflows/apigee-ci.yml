@@ -53,6 +53,17 @@ jobs:
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
+      # Detecta se HOUVE alteração nesse proxy específico da matrix
+      - name: Detect proxy changes
+        id: proxychanges
+        run: |
+          CHANGED_FILES=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" || echo "")
+          if echo "$CHANGED_FILES" | grep -q "^proxies/${{ matrix.proxy }}/"; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
       # Set Variables dependendo da branch
       - name: Set Variables for [Main] branch
         if: github.ref == 'refs/heads/main'
