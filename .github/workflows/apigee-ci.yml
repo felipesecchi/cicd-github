@@ -152,14 +152,17 @@ jobs:
   # Deploy Apigee Config (Apigee [Config] Maven plugin)
       - name: mvn deploy config xhybrid
         if: env.API_VERSION == 'googleapi'
-        run:  |
-          sed -i "s/target_apigee_env/$APIGEE_ENV/g" ./EdgeConfig/edge.json
+        working-directory: ./EdgeConfig
+        run: |
+    
+          # aqui já estamos DENTRO de EdgeConfig
+          sed -i "s/target_apigee_env/$APIGEE_ENV/g" edge.json
 
-          mvn -f ./EdgeConfig/pom.xml install -q -Pgoogleapi \
-          -Dapigee.org=$APIGEE_ORG \
-          -Dapigee.env=$APIGEE_ENV \
-          -Dapigee.config.options=update \
-          -Dapigee.config.file=./edge.json
+          mvn install -q -Pgoogleapi \
+            -Dapigee.org=$APIGEE_ORG \
+            -Dapigee.env=$APIGEE_ENV \
+            -Dapigee.config.options=update \
+            -Dapigee.config.file=edge.json
 
   # Package & Deploy Apigee proxy (Apigee [Deploy] Maven plugin)
       - name: mvn package
