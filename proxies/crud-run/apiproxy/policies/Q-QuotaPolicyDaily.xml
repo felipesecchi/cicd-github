@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Quota name="Q-QuotaPolicyDaily">
+  <DisplayName>Q-QuotaPolicyDaily</DisplayName>
+  <!-- <Allow count="100"/>
+  <Interval>1</Interval>
+  <TimeUnit>day</TimeUnit>
+  <StartTime>2025-08-12 16:00:00</StartTime>
+  <Identifier ref="apigee.client_id"/> -->
+    <Interval ref="verifyapikey.VA-VAK.apiproduct.developer.quota.interval"/>
+    <TimeUnit ref="verifyapikey.VA-VAK.apiproduct.developer.quota.timeunit"/>
+    <Allow countRef="verifyapikey.VA-VAK.apiproduct.developer.quota.limit"/>
+    <Distributed>true</Distributed>
+    <Synchronous>true</Synchronous>
+  </Quota>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<APIProxy revision="4" name="crud-run">
+  <DisplayName/>
+  <Description>CRUD simples de tarefas rodando em PHP no Cloud Run, com armazenamento local em SQLite (filesystem efêmero).
+**Atenção:** o banco local pode ser perdido em reinícios/escala. Para persistência real, migrar para Cloud SQL/Firestore.
+</Description>
+  <CreatedAt>1762969762665</CreatedAt>
+  <LastModifiedAt>1762969762665</LastModifiedAt>
+  <BasePaths>/v1/tasks</BasePaths>
+  <Policies>
+    <Policy>VA-VAK</Policy>
+    <Policy>Q-QuotaPolicyDaily</Policy>
+  </Policies>
+  <ProxyEndpoints>
+    <ProxyEndpoint>default</ProxyEndpoint>
+  </ProxyEndpoints>
+  <TargetEndpoints>
+    <TargetEndpoint>default</TargetEndpoint>
+  </TargetEndpoints>
+</APIProxy>

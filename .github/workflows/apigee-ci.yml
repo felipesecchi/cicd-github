@@ -35,6 +35,7 @@ jobs:
       matrix:
         proxy:
           - airports-cicd-v1
+          - crud-run
           # - outro-proxy
           # - mais-um-proxy
 

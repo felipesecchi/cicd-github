@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ProxyEndpoint name="default">
+  <Description/>
+  <FaultRules/>
+  <PreFlow name="PreFlow">
+    <Request>
+      <Step>
+        <Name>VA-VAK</Name>
+      </Step>
+    </Request>
+    <Response/>
+  </PreFlow>
+  <PostFlow name="PostFlow">
+    <Request/>
+    <Response/>
+  </PostFlow>
+  <Flows>
+    <Flow name="getHealth">
+      <Description>Healthcheck</Description>
+      <Request/>
+      <Response/>
+      <Condition>(proxy.pathsuffix MatchesPath "/") and (request.verb = "GET")</Condition>
+    </Flow>
+    <Flow name="listTasks">
+      <Description>Listar tarefas</Description>
+      <Request/>
+      <Response/>
+      <Condition>(proxy.pathsuffix MatchesPath "/tasks") and (request.verb = "GET")</Condition>
+    </Flow>
+    <Flow name="createTask">
+      <Description>Criar tarefa</Description>
+      <Request/>
+      <Response/>
+      <Condition>(proxy.pathsuffix MatchesPath "/tasks") and (request.verb = "POST")</Condition>
+    </Flow>
+    <Flow name="getTask">
+      <Description>Obter uma tarefa</Description>
+      <Request/>
+      <Response/>
+      <Condition>(proxy.pathsuffix MatchesPath "/tasks/{id}") and (request.verb = "GET")</Condition>
+    </Flow>
+    <Flow name="updateTask">
+      <Description>Atualizar uma tarefa</Description>
+      <Request/>
+      <Response/>
+      <Condition>(proxy.pathsuffix MatchesPath "/tasks/{id}") and (request.verb = "PUT")</Condition>
+    </Flow>
+    <Flow name="deleteTask">
+      <Description>Excluir uma tarefa</Description>
+      <Request/>
+      <Response/>
+      <Condition>(proxy.pathsuffix MatchesPath "/tasks/{id}") and (request.verb = "DELETE")</Condition>
+    </Flow>
+  </Flows>
+  <HTTPProxyConnection>
+    <BasePath>/v1/tasks</BasePath>
+    <Properties/>
+  </HTTPProxyConnection>
+  <RouteRule name="default">
+    <TargetEndpoint>default</TargetEndpoint>
+  </RouteRule>
+</ProxyEndpoint>
