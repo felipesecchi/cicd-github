@@ -5,9 +5,6 @@
   <PreFlow name="PreFlow">
     <Request>
       <Step>
-        <Name>VA-VAK</Name>
-      </Step>
-      <Step>
         <Name>Q-QuotaPolicyDaily</Name>
       </Step>
     </Request>

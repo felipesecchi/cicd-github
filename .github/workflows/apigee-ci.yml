@@ -123,6 +123,7 @@ jobs:
 
       # Package & Deploy Apigee proxy (para cada item de matrix.proxy)
       - name: mvn package
+        if: steps.proxychanges.outputs.changed == 'true'
         working-directory: proxies/${{ matrix.proxy }}
         run: |
           mvn process-resources \
@@ -132,6 +133,7 @@ jobs:
             -Ddeployment.suffix=${APIGEE_DEPLOYMENT_SUFFIX}
 
       - name: mvn config
+        if: steps.proxychanges.outputs.changed == 'true'
         working-directory: proxies/${{ matrix.proxy }}
         run: |
           mvn apigee-enterprise:configure -q \
@@ -141,7 +143,7 @@ jobs:
             -Ddeployment.suffix=${APIGEE_DEPLOYMENT_SUFFIX}
 
       - name: mvn deploy proxy edge
-        if: env.API_VERSION == 'apigeeapi'
+        if: env.API_VERSION == 'apigeeapi' && steps.proxychanges.outputs.changed == 'true'
         working-directory: proxies/${{ matrix.proxy }}
         run: |
           mvn apigee-enterprise:deploy -q -Papigeeapi \
@@ -152,7 +154,7 @@ jobs:
             -Ddeployment.suffix=${APIGEE_DEPLOYMENT_SUFFIX}
 
       - name: mvn deploy proxy xhybrid
-        if: env.API_VERSION == 'googleapi'
+        if: env.API_VERSION == 'googleapi' && steps.proxychanges.outputs.changed == 'true'
         working-directory: proxies/${{ matrix.proxy }}
         run: |
           mvn apigee-enterprise:deploy -q -Pgoogleapi \
