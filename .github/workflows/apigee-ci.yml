@@ -46,10 +46,16 @@ jobs:
       - name: Detect EdgeConfig changes
         id: edgeconfig
         run: |
-          CHANGED_FILES=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" || echo "")
+          echo ">>> Verificando alterações em EdgeConfig/"
+          CHANGED_FILES=$(git diff --name-only HEAD^ HEAD || echo "")
+          echo "Arquivos alterados:"
+          echo "$CHANGED_FILES"
+
           if echo "$CHANGED_FILES" | grep -q '^EdgeConfig/'; then
+            echo "EdgeConfig alterado."
             echo "changed=true" >> $GITHUB_OUTPUT
           else
+            echo "EdgeConfig NÃO alterado."
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
@@ -57,10 +63,19 @@ jobs:
       - name: Detect proxy changes
         id: proxychanges
         run: |
-          CHANGED_FILES=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" || echo "")
-          if echo "$CHANGED_FILES" | grep -q "^proxies/${{ matrix.proxy }}/"; then
+          echo ">>> Verificando alterações para o proxy '${{ matrix.proxy }}'"
+          CHANGED_FILES=$(git diff --name-only HEAD^ HEAD || echo "NO_DIFF")
+          echo "Arquivos alterados:"
+          echo "$CHANGED_FILES"
+
+          if [ "$CHANGED_FILES" = "NO_DIFF" ]; then
+            echo "Sem diff (provavelmente primeiro run). Marcando changed=true."
+            echo "changed=true" >> $GITHUB_OUTPUT
+          elif echo "$CHANGED_FILES" | grep -q "proxies/${{ matrix.proxy }}/"; then
+            echo "Proxy '${{ matrix.proxy }}' teve alteração."
             echo "changed=true" >> $GITHUB_OUTPUT
           else
+            echo "Proxy '${{ matrix.proxy }}' NÃO teve alteração."
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
