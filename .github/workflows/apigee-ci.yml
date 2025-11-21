@@ -34,7 +34,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - proxy: airports-cicd-v1
+          - proxy: airports-cicd
             service_account: proxy-airports-cicd@SEU_PROJETO.iam.gserviceaccount.com
 
           - proxy: crud-run
