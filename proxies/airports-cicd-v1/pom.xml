@@ -190,6 +190,9 @@ limitations under the License.
 				<apigee.hosturl>https://apigee.googleapis.com</apigee.hosturl>
 				<apigee.bearer>${token}</apigee.bearer> <!-- this takes precedence over service account file -->
 				<apigee.serviceaccount.file>${sa}</apigee.serviceaccount.file>
+
+				<!-- NOVO: Service Account associada ao deploy do proxy -->
+				<apigee.googletoken.email>${googleTokenEmail}</apigee.googletoken.email>
 			</properties>
 			<build>
 				<plugins>

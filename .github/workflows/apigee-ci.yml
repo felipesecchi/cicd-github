@@ -29,15 +29,19 @@ jobs:
     if: "!contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ubuntu-latest
 
-    # >>> AQUI VOCÊ LISTA OS PROXIES (pasta dentro de proxies/)
+    # >>> AQUI VOCÊ LISTA OS PROXIES E A SA ASSOCIADA A CADA UM
     strategy:
       fail-fast: false
       matrix:
-        proxy:
-          - airports-cicd-v1
-          - crud-run
-          # - outro-proxy
-          # - mais-um-proxy
+        include:
+          - proxy: airports-cicd-v1
+            service_account: proxy-airports-cicd@SEU_PROJETO.iam.gserviceaccount.com
+
+          - proxy: crud-run
+            service_account: proxy-crud-run@SEU_PROJETO.iam.gserviceaccount.com
+
+          # - proxy: outro-proxy
+          #   service_account: outra-sa@SEU_PROJETO.iam.gserviceaccount.com
 
     steps:
       - uses: actions/checkout@v3
@@ -116,7 +120,7 @@ jobs:
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2   
 
-      # Gera arquivo da Service Account
+      # Gera arquivo da Service Account (deploy)
       - name: Generate SA key file
         if: env.API_VERSION == 'googleapi'
         run: | 
@@ -170,10 +174,11 @@ jobs:
 
       - name: mvn deploy proxy xhybrid
         if: env.API_VERSION == 'googleapi' && steps.proxychanges.outputs.changed == 'true'
-        working-directory: proxies/${{ matrix.proxy }}
+        working-directory: proxies/{{ matrix.proxy }}
         run: |
           mvn apigee-enterprise:deploy -q -Pgoogleapi \
             -Denv=${APIGEE_ENV} \
             -Dsa=../../sa.json \
             -Dorg=${APIGEE_ORG} \
-            -Ddeployment.suffix=${APIGEE_DEPLOYMENT_SUFFIX}
+            -Ddeployment.suffix=${APIGEE_DEPLOYMENT_SUFFIX} \
+            -DgoogleTokenEmail=${{ matrix.service_account }}
